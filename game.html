@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego Retro Estilo Caricatura</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        body { margin:0; font-family:"Press Start 2P", cursive; background:#87ceeb; }
+
+        .start-screen, .gameover-screen, .score-history-screen {
+            position: fixed; inset:0;
+            display:flex; justify-content:center; align-items:center;
+            z-index:999;
+        }
+
+        .start-screen { background:url("https://static.vecteezy.com/system/resources/previews/020/647/962/non_2x/fantasy-game-background-free-vector.jpg") no-repeat center/cover; }
+        .gameover-screen { background: rgba(0,0,0,0.7); display:none; }
+        .score-history-screen { background: rgba(0,0,0,0.7); display:none; }
+
+        .window {
+            background: #f2f2f2;
+            border: 4px solid black;
+            width: 500px; border-radius:6px; box-shadow:6px 6px 0 black;
+            text-align:center; padding:20px;
+            position: relative;
+        }
+        
+        .window::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border: 4px solid white;
+            border-radius: 6px;
+            pointer-events: none;
+        }
+        
+        .title {
+            font-size:28px;
+            margin-bottom:20px;
+            padding: 10px;
+            background: linear-gradient(135deg, #ffd500, #ff4081);
+            color: black;
+            border: 2px solid black;
+        }
+        
+        #playerName { 
+            padding:12px; width:80%; 
+            font-size:14px; 
+            border:2px solid black; 
+            border-radius:6px; 
+            margin-bottom:15px; 
+            text-align:center;
+            background: #fff;
+        }
+        
+        button { 
+            padding:12px 20px; 
+            font-size:14px; 
+            border: 2px solid black; 
+            background:#ffd500; 
+            cursor:pointer; 
+            border-radius:6px; 
+            margin-top:10px; 
+            margin-right: 10px; 
+            position: relative;
+            box-shadow: 2px 2px 0 black;
+            transition: all 0.1s ease;
+        }
+        
+        button::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border: 2px solid black;
+            border-radius: 6px;
+            pointer-events: none;
+            box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.5);
+            animation: pulse 1s infinite alternate;
+        }
+        
+        button:hover { 
+            background:#ff4081; 
+            color:white; 
+            transform: translateY(-2px);
+            box-shadow: 4px 4px 0 black;
+        }
+
+        @keyframes pulse {
+            from { border-color: black; }
+            to { border-color: rgba(0, 0, 0, 0.5); }
+        }
+
+        #gameCanvas { display:block; margin:20px auto; border:2px solid white; width:1800px; height:800px; }
+        
+        #scoreTable { 
+            width:80%; 
+            margin:20px auto; 
+            border-collapse:collapse; 
+            box-shadow:0 0 10px rgba(0,0,0,0.3);
+            border: 2px solid black;
+        }
+        
+        #scoreTable th { 
+            background:linear-gradient(135deg, #ff80ab, #ff4081); 
+            color:black; 
+            padding:12px;
+            border: 2px solid black;
+        }
+        
+        #scoreTable td { 
+            background:#fff; 
+            text-align:center; 
+            padding:10px; 
+            border-bottom:1px solid #ddd;
+            border-left: 1px solid black;
+            border-right: 1px solid black;
+        }
+        
+        #scoreTable tr:nth-child(even) td { 
+            background:#ffe4ec; 
+        }
+
+        #soundToggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 2em;
+            cursor: pointer;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 50%;
+            border: 2px solid black;
+        }
+
+        .audio-info {
+            background: #fffacd;
+            border: 2px solid #ffa500;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="startScreen" class="start-screen">
+    <div class="window">
+        <h1 class="title">🌟 Juego Retro 🌟</h1>
+        <input type="text" id="playerName" placeholder="Ingresa tu nombre">
+        <div class="audio-info">
+            🎵 Música de suspenso divertido<br>
+            ¡Una aventura misteriosa te espera!
+        </div>
+        <br>
+        <button onclick="startGame()">Comenzar</button>
+    </div>
+</div>
+
+<div id="gameOverScreen" class="gameover-screen">
+    <div class="window">
+        <h1 class="title" style="color:red;">GAME OVER</h1>
+        <p id="finalScore"></p>
+        <button onclick="restartGame()">Reiniciar</button>
+        <button onclick="showScoreHistory()">Ver Historial</button>
+    </div>
+</div>
+
+<div id="scoreHistoryScreen" class="score-history-screen">
+    <div class="window">
+        <h2 class="title">Historial de Puntajes</h2>
+        <table id="scoreTable">
+            <thead>
+                <tr><th>Jugador</th><th>Puntaje</th></tr>
+            </thead>
+            <tbody id="scoreTableBody"></tbody>
+        </table>
+        <button onclick="hideScoreHistory()">Cerrar</button>
+        <button onclick="goBackToStart()">Volver al Inicio</button>
+    </div>
+</div>
+
+<div id="soundToggle" onclick="toggleSound()">🔊</div>
+
+<canvas id="gameCanvas" width="1800" height="800"></canvas>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+// Sistema de audio mejorado
+class AudioManager {
+    constructor() {
+        this.audioContext = null;
+        this.soundEnabled = true;
+        this.backgroundMusic = null;
+        this.sounds = {};
+        this.initialized = false;
+    }
+
+    async initialize() {
+        if (this.initialized) return;
+        
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            await this.createSounds();
+            this.initialized = true;
+        } catch (error) {
+            console.log("Audio no disponible:", error);
+        }
+    }
+
+    async createSounds() {
+        // Crear música de fondo con Web Audio API
+        this.backgroundMusic = await this.createBackgroundMusic();
+        
+        // Crear sonidos de efectos
+        this.sounds.jump = await this.createJumpSound();
+        this.sounds.gameOver = await this.createGameOverSound();
+        this.sounds.score = await this.createScoreSound();
+    }
+
+    async createBackgroundMusic() {
+        if (!this.audioContext) return null;
+        
+        const duration = 12; // Más larga para desarrollar la tensión
+        const sampleRate = this.audioContext.sampleRate;
+        const buffer = this.audioContext.createBuffer(2, duration * sampleRate, sampleRate);
+        const leftChannel = buffer.getChannelData(0);
+        const rightChannel = buffer.getChannelData(1);
+        
+        // Notas en escala menor armónica para crear tensión + diversión
+        const baseNotes = [261.63, 277.18, 311.13, 329.63, 369.99, 415.30, 466.16, 523.25]; // C, C#, D#, E, F#, G#, A#, C
+        
+        // Melodía que combina suspense con diversión - estilo "Danny Elfman meets 8-bit"
+        const melody = [
+            // Sección A: Misteriosa pero juguetona
+            0, 3, 5, 3, 2, 3, 5, 7,  // Do-Mi-Sol#-Mi-Re#-Mi-Sol#-Do(oct)
+            0, 3, 5, 6, 5, 3, 2, 0,  // Do-Mi-Sol#-La#-Sol#-Mi-Re#-Do
+            
+            // Sección B: Más intensa y divertida
+            2, 4, 6, 7, 6, 4, 5, 3,  // Re#-Fa#-La#-Do(oct)-La#-Fa#-Sol#-Mi
+            2, 3, 5, 7, 5, 3, 2, 0,  // Re#-Mi-Sol#-Do(oct)-Sol#-Mi-Re#-Do
+            
+            // Sección C: Clímax suspenseful pero energético
+            7, 6, 5, 4, 3, 2, 1, 0,  // Escala descendente dramática
+            0, 2, 4, 6, 5, 3, 7, 0,  // Resolución juguetona
+        ];
+        
+        // Bajo más dramático y variado
+        const bassNotes = [130.81, 138.59, 155.56, 164.81, 185.00, 207.65, 233.08, 261.63];
+        const bassLine = [
+            // Patrón de bajo que crea tensión
+            0, 0, 3, 3, 0, 0, 5, 5,  // Do-Do-Mi-Mi-Do-Do-Sol#-Sol#
+            0, 3, 5, 0, 3, 5, 2, 0,  // Do-Mi-Sol#-Do-Mi-Sol#-Re#-Do
+            
+            2, 2, 4, 4, 2, 2, 6, 6,  // Re#-Re#-Fa#-Fa#-Re#-Re#-La#-La#  
+            0, 2, 3, 5, 3, 2, 0, 0,  // Do-Re#-Mi-Sol#-Mi-Re#-Do-Do
+            
+            7, 6, 5, 4, 3, 2, 1, 0,  // Descenso cromático dramático
+            0, 0, 5, 5, 0, 0, 0, 0,  // Resolución en Do
+        ];
+        
+        const bpm = 120; // Tempo medio para construir tensión
+        const beatDuration = 60 / bpm / 4; // Corcheas para más detalle
+        
+        for (let i = 0; i < leftChannel.length; i++) {
+            const time = i / sampleRate;
+            const globalProgress = time / duration;
+            
+            // Determinar posición en la melodía
+            const beatIndex = Math.floor(time / beatDuration) % melody.length;
+            const melodyFreq = baseNotes[melody[beatIndex]];
+            const bassFreq = bassNotes[bassLine[beatIndex]];
+            
+            const noteProgress = (time % beatDuration) / beatDuration;
+            
+            // Envelope dinámico que cambia según la sección
+            let envelope = 1;
+            if (noteProgress < 0.05) {
+                envelope = noteProgress / 0.05;
+            } else if (noteProgress > 0.8) {
+                envelope = 0.4 + (1 - noteProgress) * 0.6 / 0.2;
+            } else {
+                envelope = 0.7 + 0.3 * Math.sin(time * 8); // Tremolo sutil
+            }
+            
+            // Crear melodía principal con carácter misterioso
+            let melodySample = 0;
+            melodySample += 0.35 * Math.sin(2 * Math.PI * melodyFreq * time); // Fundamental
+            melodySample += 0.15 * Math.sin(2 * Math.PI * melodyFreq * 2 * time); // Segunda armónica
+            melodySample += 0.08 * Math.sin(2 * Math.PI * melodyFreq * 3 * time); // Tercera armónica
+            
+            // Modulación que crea "inquietud" pero divertida
+            const modulation = 1 + 0.05 * Math.sin(2 * Math.PI * 3.5 * time) * globalProgress;
+            melodySample *= modulation;
+            
+            // Bajo más profundo y dramático
+            let bassSample = 0;
+            bassSample += 0.4 * Math.sin(2 * Math.PI * bassFreq * time);
+            bassSample += 0.2 * Math.sin(2 * Math.PI * bassFreq * 2 * time);
+            
+            // "Ruido" atmosférico para suspense (pero controlado)
+            const atmosphericNoise = (Math.random() - 0.5) * 0.02 * globalProgress * 
+                                   Math.sin(2 * Math.PI * 0.3 * time); // Muy sutil
+            
+            // Percusión irregular para crear tensión
+            const irregularBeat = Math.floor(time * 4) % 7 === 0; // Patrón irregular 7/4
+            const kickEnvelope = irregularBeat && noteProgress < 0.1 ? 
+                               Math.exp(-noteProgress * 30) : 0;
+            const kickSample = Math.sin(2 * Math.PI * 60 * time) * kickEnvelope * 0.1;
+            
+            // Hi-hat "nervioso" - más frecuente en secciones tensas
+            const nervousHihatFreq = 6000 + Math.sin(time * 20) * 1000;
+            const hihatPattern = (Math.floor(time * 16) % 3 === 0) && (noteProgress < 0.05);
+            const hihatSample = hihatPattern ? 
+                              (Math.random() - 0.5) * Math.exp(-noteProgress * 40) * 0.08 : 0;
+            
+            // Intensidad que crece a lo largo de la pieza
+            const intensity = 0.5 + 0.5 * Math.sin(globalProgress * Math.PI * 2);
+            
+            // Mezcla final con separación estéreo para profundidad
+            const finalMelody = melodySample * envelope * 0.12 * intensity;
+            const finalBass = bassSample * envelope * 0.08 * intensity;
+            
+            // Canal izquierdo: Melodía principal + efectos
+            leftChannel[i] = finalMelody + finalBass * 0.3 + atmosphericNoise + 
+                           kickSample + hihatSample;
+            
+            // Canal derecho: Bajo + melodía con delay + efectos
+            const delayedMelody = i > sampleRate * 0.08 ? 
+                                leftChannel[i - Math.floor(sampleRate * 0.08)] * 0.3 : 0;
+            rightChannel[i] = finalBass + finalMelody * 0.6 + delayedMelody + 
+                            atmosphericNoise * 0.7 + kickSample;
+            
+            // Reverb más pronunciado para atmósfera
+            if (i > sampleRate * 0.1) {
+                const reverbDelay = Math.floor(sampleRate * 0.1);
+                const reverbAmount = 0.15 * intensity;
+                leftChannel[i] += leftChannel[i - reverbDelay] * reverbAmount;
+                rightChannel[i] += rightChannel[i - reverbDelay] * reverbAmount;
+            }
+        }
+        
+        return buffer;
+    }
+
+    async createJumpSound() {
+        if (!this.audioContext) return null;
+        
+        const duration = 0.4;
+        const sampleRate = this.audioContext.sampleRate;
+        const buffer = this.audioContext.createBuffer(1, duration * sampleRate, sampleRate);
+        const channelData = buffer.getChannelData(0);
+        
+        for (let i = 0; i < channelData.length; i++) {
+            const time = i / sampleRate;
+            
+            // Sonido más divertido tipo "boing" de videojuego
+            const frequency1 = 300 + 200 * Math.sin(2 * Math.PI * time * 8); // Oscilación rápida
+            const frequency2 = 500 * (1 + time * 2); // Frecuencia ascendente
+            
+            const envelope1 = Math.exp(-time * 8); // Decay rápido
+            const envelope2 = Math.exp(-time * 12) * Math.sin(time * 20); // Con oscilación
+            
+            let sample = 0;
+            sample += 0.3 * Math.sin(2 * Math.PI * frequency1 * time) * envelope1;
+            sample += 0.2 * Math.sin(2 * Math.PI * frequency2 * time) * envelope2;
+            
+            // Agregar un "pop" al inicio
+            if (time < 0.05) {
+                const popFreq = 150 + time * 2000;
+                sample += 0.4 * Math.sin(2 * Math.PI * popFreq * time) * (0.05 - time) * 20;
+            }
+            
+            channelData[i] = sample * 0.4;
+        }
+        
+        return buffer;
+    }
+
+    async createGameOverSound() {
+        if (!this.audioContext) return null;
+        
+        const duration = 2.5; // Más largo para desarrollar la melancolía
+        const sampleRate = this.audioContext.sampleRate;
+        const buffer = this.audioContext.createBuffer(2, duration * sampleRate, sampleRate);
+        const leftChannel = buffer.getChannelData(0);
+        const rightChannel = buffer.getChannelData(1);
+        
+        // Progresión melancólica en Do menor - muy emotiva
+        const notes = [
+            523.25, 493.88, 466.16, 440.00, 415.30, 392.00, 369.99, 349.23, 329.63, 311.13
+        ]; // C5 descendiendo cromaticamente hasta D#4
+        
+        const melody = [0, 1, 2, 4, 6, 8, 9, 8, 6, 4, 2, 1, 0]; // Descenso melancólico
+        const harmony = [4, 6, 8, 9, 8, 6, 4, 2, 0, 1, 2, 4, 6]; // Armonía que acompaña
+        
+        for (let i = 0; i < leftChannel.length; i++) {
+            const time = i / sampleRate;
+            const progress = time / duration;
+            
+            // Determinar qué nota tocar
+            const noteIndex = Math.floor(progress * melody.length);
+            const actualIndex = Math.min(noteIndex, melody.length - 1);
+            const melodyFreq = notes[melody[actualIndex]];
+            const harmonyFreq = notes[harmony[actualIndex]] * 0.75; // Quinta más baja
+            
+            // Posición dentro de cada nota
+            const noteProgress = (progress * melody.length) % 1;
+            
+            // Envelope muy suave y melancólico - como un suspiro
+            let envelope = 1;
+            if (progress < 0.1) {
+                envelope = Math.sin(progress * Math.PI / 0.2); // Attack muy suave
+            } else if (progress > 0.7) {
+                envelope = 0.3 + 0.7 * Math.cos((progress - 0.7) * Math.PI / 0.6); // Decay gradual
+            } else {
+                // Tremolo muy sutil para emoción
+                envelope = 0.8 + 0.2 * Math.sin(time * Math.PI * 2);
+            }
+            
+            // Crear la melodía principal - sonido de campana triste
+            let melodySample = 0;
+            melodySample += 0.4 * Math.sin(2 * Math.PI * melodyFreq * time);
+            melodySample += 0.15 * Math.sin(2 * Math.PI * melodyFreq * 2 * time);
+            melodySample += 0.08 * Math.sin(2 * Math.PI * melodyFreq * 4 * time);
+            
+            // Modulación muy sutil que añade "humanidad" al sonido
+            const vibrato = 1 + 0.015 * Math.sin(2 * Math.PI * 4.5 * time) * progress;
+            melodySample *= vibrato;
+            
+            // Armonía de acompañamiento - como cuerdas melancólicas
+            let harmonySample = 0;
+            harmonySample += 0.25 * Math.sin(2 * Math.PI * harmonyFreq * time);
+            harmonySample += 0.12 * Math.sin(2 * Math.PI * harmonyFreq * 2 * time);
+            harmonySample += 0.06 * Math.sin(2 * Math.PI * harmonyFreq * 3 * time);
+            
+            // Bajo profundo y melancólico que entra gradualmente
+            const bassFreq = melodyFreq / 4; // Dos octavas más bajo
+            const bassEnvelope = progress > 0.3 ? (progress - 0.3) / 0.7 : 0;
+            const bassSample = 0.3 * Math.sin(2 * Math.PI * bassFreq * time) * bassEnvelope;
+            
+            // Efectos atmosféricos para profundidad emocional
+            const pad = 0.02 * Math.sin(2 * Math.PI * melodyFreq * 0.5 * time) * 
+                       Math.sin(time * Math.PI * 0.5) * progress;
+            
+            // "Respiración" - pause naturaleza entre frases musicales
+            const breathPattern = Math.sin(progress * Math.PI * 4);
+            const breathEffect = breathPattern > 0.8 ? 0.7 : 1;
+            
+            // Aplicar todos los efectos
+            const finalMelody = melodySample * envelope * breathEffect * 0.15;
+            const finalHarmony = harmonySample * envelope * breathEffect * 0.08;
+            const finalBass = bassSample * envelope * 0.1;
+            
+            // Canal izquierdo: Melodía principal + pad atmosférico
+            leftChannel[i] = finalMelody + finalHarmony * 0.6 + finalBass + pad;
+            
+            // Canal derecho: Armonía + melodía con delay + efectos
+            const delayTime = 0.12; // Delay más largo para efecto cathedral
+            const delayIndex = i - Math.floor(sampleRate * delayTime);
+            const delayedSignal = delayIndex >= 0 ? leftChannel[delayIndex] * 0.4 : 0;
+            
+            rightChannel[i] = finalHarmony + finalMelody * 0.7 + finalBass + 
+                            pad * 0.8 + delayedSignal;
+            
+            // Reverb largo y profundo para sensación de vacío melancólico
+            if (i > sampleRate * 0.2) {
+                const longReverbDelay = Math.floor(sampleRate * 0.2);
+                const reverbAmount = 0.25 * (1 - progress * 0.3); // Reverb que se desvanece
+                
+                leftChannel[i] += leftChannel[i - longReverbDelay] * reverbAmount;
+                rightChannel[i] += rightChannel[i - longReverbDelay] * reverbAmount * 0.8;
+            }
+            
+            // Reverb corto para textura
+            if (i > sampleRate * 0.05) {
+                const shortReverbDelay = Math.floor(sampleRate * 0.05);
+                leftChannel[i] += leftChannel[i - shortReverbDelay] * 0.15;
+                rightChannel[i] += rightChannel[i - shortReverbDelay] * 0.12;
+            }
+        }
+        
+        return buffer;
+    }
+
+    async createScoreSound() {
+        if (!this.audioContext) return null;
+        
+        const duration = 0.5;
+        const sampleRate = this.audioContext.sampleRate;
+        const buffer = this.audioContext.createBuffer(1, duration * sampleRate, sampleRate);
+        const channelData = buffer.getChannelData(0);
+        
+        // Sonido tipo "power-up" más emocionante
+        const notes = [523, 659, 784, 1047]; // Do5, Mi5, Sol5, Do6 - acorde mayor ascendente
+        
+        for (let i = 0; i < channelData.length; i++) {
+            const time = i / sampleRate;
+            const progress = time / duration;
+            
+            let sample = 0;
+            
+            // Tocar las notas en secuencia rápida
+            notes.forEach((freq, index) => {
+                const noteStart = index * duration / notes.length;
+                const noteEnd = (index + 1) * duration / notes.length;
+                
+                if (time >= noteStart && time < noteEnd) {
+                    const noteTime = time - noteStart;
+                    const noteProgress = noteTime / (duration / notes.length);
+                    
+                    // Envelope con ataque rápido y decay
+                    let envelope = 1;
+                    if (noteProgress < 0.1) {
+                        envelope = noteProgress / 0.1;
+                    } else {
+                        envelope = Math.exp(-(noteProgress - 0.1) * 8);
+                    }
+                    
+                    // Crear sonido rich con armónicos
+                    sample += 0.4 * Math.sin(2 * Math.PI * freq * time) * envelope;
+                    sample += 0.2 * Math.sin(2 * Math.PI * freq * 2 * time) * envelope;
+                    sample += 0.1 * Math.sin(2 * Math.PI * freq * 3 * time) * envelope;
+                    
+                    // Agregar un poco de "sparkle"
+                    const sparkleFreq = freq * 4 + Math.sin(time * 50) * 100;
+                    sample += 0.15 * Math.sin(2 * Math.PI * sparkleFreq * time) * envelope * 0.5;
+                }
+            });
+            
+            channelData[i] = sample * 0.3;
+        }
+        
+        return buffer;
+    }
+
+    playBackgroundMusic() {
+        if (!this.soundEnabled || !this.audioContext || !this.backgroundMusic) return;
+        
+        try {
+            // Detener música anterior si existe
+            if (this.musicSource) {
+                this.musicSource.stop();
+            }
+            
+            this.musicSource = this.audioContext.createBufferSource();
+            this.musicSource.buffer = this.backgroundMusic;
+            this.musicSource.loop = true;
+            
+            const gainNode = this.audioContext.createGain();
+            gainNode.gain.value = 0.2; // Volumen un poco más alto para la nueva música
+            
+            this.musicSource.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+            this.musicSource.start();
+        } catch (error) {
+            console.log("Error reproduciendo música:", error);
+        }
+    }
+
+    stopBackgroundMusic() {
+        if (this.musicSource) {
+            try {
+                this.musicSource.stop();
+                this.musicSource = null;
+            } catch (error) {
+                console.log("Error deteniendo música:", error);
+            }
+        }
+    }
+
+    playSound(soundName) {
+        if (!this.soundEnabled || !this.audioContext || !this.sounds[soundName]) return;
+        
+        try {
+            const source = this.audioContext.createBufferSource();
+            source.buffer = this.sounds[soundName];
+            source.connect(this.audioContext.destination);
+            source.start();
+        } catch (error) {
+            console.log("Error reproduciendo sonido:", error);
+        }
+    }
+
+    toggle() {
+        this.soundEnabled = !this.soundEnabled;
+        if (!this.soundEnabled) {
+            this.stopBackgroundMusic();
+        } else if (gameRunning) {
+            this.playBackgroundMusic();
+        }
+        return this.soundEnabled;
+    }
+}
+
+// Instancia global del administrador de audio
+const audioManager = new AudioManager();
+
+let player = { x:50, y:650, width:40, height:40, dy:0, gravity:1, jump:-15, grounded:false };
+let obstacles=[], clouds=[], bushes=[], trees=[];
+let score=0, playerName="", gameRunning=false, gameSpeed=5;
+let sun = { x:1650, y:120, radius:40 };
+let lastObstacleX = 0;
+
+async function toggleSound() {
+    await audioManager.initialize();
+    const enabled = audioManager.toggle();
+    document.getElementById("soundToggle").textContent = enabled ? "🔊" : "🔇";
+}
+
+function initBackground() {
+    clouds = [];
+    for(let i=0;i<6;i++) clouds.push({
+        x: Math.random()*1800, y:50 + Math.random()*120,
+        size:80 + Math.random()*50, speed:0.3 + Math.random()*0.3
+    });
+    
+    bushes = [];
+    for(let i=0;i<8;i++){
+        bushes.push({
+            x: i*220 + 200,
+            y: 700 + Math.random()*10,
+            width: 70 + Math.random()*30,
+            height: 40 + Math.random()*20,
+            speed: 0.8 + Math.random()*0.5
+        });
+    }
+
+    trees = [];
+    for(let i=0;i<4;i++){
+        trees.push({
+            x: i*500 + 100,
+            y: 500 + Math.random()*20,
+            trunkWidth: 40,
+            trunkHeight: 120,
+            foliageSize: 80 + Math.random()*30,
+            speed: 0.7 + Math.random()*0.4
+        });
+    }
+}
+
+async function startGame(){
+    playerName = document.getElementById("playerName").value || "Jugador";
+    document.getElementById("startScreen").style.display="none";
+    document.getElementById("gameOverScreen").style.display="none";
+    document.getElementById("scoreHistoryScreen").style.display="none";
+    
+    // Inicializar audio
+    await audioManager.initialize();
+    
+    resetGame(); 
+    initBackground();
+    gameRunning = true; 
+    gameSpeed=5;
+    
+    // Reproducir música de fondo
+    audioManager.playBackgroundMusic();
+    
+    requestAnimationFrame(updateGame);
+}
+
+function restartGame(){ startGame(); }
+
+function resetGame(){
+    player.y=720-player.height; 
+    player.dy=0; 
+    obstacles=[]; 
+    score=0; 
+    player.grounded=false;
+    lastObstacleX = 0;
+}
+
+function drawPlayer() {
+    ctx.fillStyle = "#ffeb3b";
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 2;
+
+    ctx.fillStyle = "#ff5722";
+    ctx.fillRect(player.x, player.y + 20, player.width, player.height - 20);
+    ctx.strokeRect(player.x, player.y + 20, player.width, player.height - 20);
+
+    ctx.beginPath();
+    ctx.arc(player.x + player.width / 2, player.y + 20, player.width / 2, 0, Math.PI * 2);
+    ctx.fillStyle = "#ffeb3b";
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(player.x + player.width / 4, player.y + 15, 3, 0, Math.PI * 2);
+    ctx.arc(player.x + player.width * 3 / 4, player.y + 15, 3, 0, Math.PI * 2);
+    ctx.fillStyle = "black";
+    ctx.fill();
+}
+
+function drawBackground() {
+    const sky = ctx.createLinearGradient(0,0,0,canvas.height);
+    sky.addColorStop(0,"#87ceeb");
+    sky.addColorStop(1,"#e0f2f7");
+    ctx.fillStyle = sky;
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    ctx.beginPath();
+    ctx.arc(sun.x, sun.y, sun.radius, 0, Math.PI * 2);
+    ctx.fillStyle = "#ffeb3b";
+    ctx.fill();
+    ctx.strokeStyle = "#fbc02d";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    
+    ctx.fillStyle = "white";
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 2;
+    clouds.forEach(c => {
+        ctx.beginPath();
+        ctx.moveTo(c.x, c.y);
+        ctx.bezierCurveTo(c.x - 50, c.y + 20, c.x - 50, c.y + 70, c.x + 50, c.y + 70);
+        ctx.bezierCurveTo(c.x + 100, c.y + 70, c.x + 100, c.y + 40, c.x + 70, c.y + 20);
+        ctx.bezierCurveTo(c.x + 150, c.y - 20, c.x + 80, c.y - 50, c.x, c.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        c.x -= c.speed;
+        if(c.x + c.size < 0){ c.x = canvas.width + c.size; c.y = 50 + Math.random()*120; c.size = 80 + Math.random()*50; c.speed = 0.3 + Math.random()*0.3; }
+    });
+
+    ctx.fillStyle = "#7cb342";
+    ctx.strokeStyle = "#558b2f";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 750);
+    ctx.lineTo(0, 600);
+    ctx.quadraticCurveTo(canvas.width * 0.25, 500, canvas.width * 0.5, 600);
+    ctx.quadraticCurveTo(canvas.width * 0.75, 700, canvas.width, 600);
+    ctx.lineTo(canvas.width, 750);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    const groundHeight = 80;
+    const blockWidth = 80;
+    const blockHeight = 60;
+    const groundY = canvas.height - groundHeight;
+
+    for (let i = 0; i < canvas.width / blockWidth + 1; i++) {
+        ctx.fillStyle = "#a8773e";
+        ctx.fillRect(i * blockWidth, groundY, blockWidth, blockHeight);
+        
+        ctx.strokeStyle = "#7c552f";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(i * blockWidth, groundY, blockWidth, blockHeight);
+        
+        ctx.beginPath();
+        ctx.moveTo(i * blockWidth + blockWidth / 2, groundY);
+        ctx.lineTo(i * blockWidth + blockWidth / 2, groundY + blockHeight);
+        ctx.stroke();
+    }
+    ctx.fillStyle = "#8d572e";
+    ctx.fillRect(0, groundY + blockHeight, canvas.width, groundHeight - blockHeight);
+    ctx.strokeStyle = "#5c371d";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(0, groundY + blockHeight, canvas.width, groundHeight - blockHeight);
+
+    trees.forEach(t => {
+        t.x -= t.speed * 0.5;
+        if(t.x + t.trunkWidth < 0) t.x = canvas.width + Math.random()*200;
+
+        ctx.fillStyle = "#8B4513";
+        ctx.strokeStyle = "#5C2A05";
+        ctx.lineWidth = 3;
+        ctx.fillRect(t.x, t.y, t.trunkWidth, t.trunkHeight);
+        ctx.strokeRect(t.x, t.y, t.trunkWidth, t.trunkHeight);
+
+        ctx.fillStyle = "#4CAF50";
+        ctx.strokeStyle = "#2E7D32";
+        ctx.beginPath();
+        ctx.ellipse(t.x + t.trunkWidth / 2, t.y, t.foliageSize * 0.6, t.foliageSize * 0.5, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.stroke();
+    });
+
+    bushes.forEach(b => {
+        b.x -= b.speed * 0.5;
+        if(b.x + b.width < 0) b.x = canvas.width + Math.random()*200;
+        
+        ctx.fillStyle = "#689f38";
+        ctx.strokeStyle = "#33691e";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(b.x, b.y, b.width / 2, b.height / 2, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.stroke();
+    });
+}
+
+let lastScore = 0;
+
+function updateObstacles(){
+    const obstacleSpawnDistance = 600;
+    if (obstacles.length === 0 || canvas.width - obstacles[obstacles.length-1].x > obstacleSpawnDistance) {
+        let obstacleType = Math.random();
+        if (obstacleType < 0.6) {
+             obstacles.push({
+                x: canvas.width,
+                y: 650,
+                width: 30,
+                height: 40,
+                isPlatform: false
+            });
+        } else {
+            obstacles.push({
+                x: canvas.width,
+                y: 500 + Math.random() * 50,
+                width: 150 + Math.random() * 80,
+                height: 50,
+                isPlatform: true
+            });
+        }
+    }
+
+    obstacles.forEach((obs,i)=>{
+        obs.x -= gameSpeed;
+
+        if (obs.isPlatform) {
+            ctx.fillStyle = "#a8773e";
+            ctx.strokeStyle = "#7c552f";
+            ctx.lineWidth = 2;
+        } else {
+            ctx.fillStyle = "#ff1744";
+            ctx.strokeStyle = "#9c0000";
+            ctx.lineWidth = 3;
+        }
+        
+        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+        ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
+        
+        const blockRows = Math.floor(obs.height / 20);
+        const blockCols = Math.floor(obs.width / 30);
+        for (let r = 0; r < blockRows; r++) {
+            ctx.beginPath();
+            ctx.moveTo(obs.x, obs.y + (r + 1) * (obs.height / blockRows));
+            ctx.lineTo(obs.x + obs.width, obs.y + (r + 1) * (obs.height / blockRows));
+            ctx.stroke();
+        }
+        for (let c = 0; c < blockCols; c++) {
+            let yOffset = (c % 2 === 0) ? 0 : obs.height / (blockRows * 2);
+            ctx.beginPath();
+            ctx.moveTo(obs.x + (c + 1) * (obs.width / blockCols), obs.y + yOffset);
+            ctx.lineTo(obs.x + (c + 1) * (obs.width / blockCols), obs.y + obs.height + yOffset);
+            ctx.stroke();
+        }
+
+        if(player.x < obs.x + obs.width && player.x + player.width > obs.x &&
+           player.y < obs.y + obs.height && player.y + player.height > obs.y) {
+               if (obs.isPlatform && player.dy >= 0 && player.y + player.height - player.dy <= obs.y) {
+                   player.y = obs.y - player.height;
+                   player.dy = 0;
+                   player.grounded = true;
+               } else if (!obs.isPlatform || player.y + player.height > obs.y + 10) {
+                   gameOver();
+               }
+           }
+
+        if(obs.x+obs.width<0){ 
+            obstacles.splice(i,1); 
+            score++; 
+            
+            // Reproducir sonido de puntuación
+            if (score > lastScore) {
+                audioManager.playSound('score');
+                lastScore = score;
+            }
+            
+            if(score%5===0) gameSpeed=5+Math.floor(score/5); 
+        }
+    });
+}
+
+function updateScore(){
+    ctx.fillStyle="black"; ctx.font="24px 'Press Start 2P'";
+    ctx.fillText("Puntos: "+score,30,50);
+    ctx.fillText("Jugador: "+playerName,1400,50);
+}
+
+function saveScore(){
+    const tbody=document.getElementById("scoreTableBody");
+    const row=document.createElement("tr"); row.innerHTML=`<td>${playerName}</td><td>${score}</td>`; tbody.appendChild(row);
+}
+
+function gameOver(){
+    gameRunning=false; 
+    audioManager.stopBackgroundMusic();
+    audioManager.playSound('gameOver');
+    saveScore();
+    document.getElementById("finalScore").textContent="Puntaje final: "+score;
+    document.getElementById("gameOverScreen").style.display="flex";
+}
+
+function showScoreHistory() {
+    document.getElementById("gameOverScreen").style.display="none";
+    document.getElementById("scoreHistoryScreen").style.display="flex";
+}
+
+function hideScoreHistory() {
+    document.getElementById("scoreHistoryScreen").style.display="none";
+    document.getElementById("gameOverScreen").style.display="flex";
+}
+
+function goBackToStart() {
+    document.getElementById("scoreHistoryScreen").style.display="none";
+    document.getElementById("startScreen").style.display="flex";
+}
+
+function updateGame(){
+    if(!gameRunning) return;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawBackground();
+    
+    player.y += player.dy;
+    player.dy += player.gravity;
+
+    const groundLevel = canvas.height - 80 - player.height;
+    if(player.y >= groundLevel){
+        player.y = groundLevel;
+        player.dy = 0;
+        player.grounded = true;
+    }
+    drawPlayer();
+
+    updateObstacles();
+
+    updateScore();
+
+    requestAnimationFrame(updateGame);
+}
+
+document.addEventListener("keydown", async (e)=>{
+    if(e.code==="Space" && player.grounded && gameRunning){ 
+        e.preventDefault(); 
+        player.dy=player.jump; 
+        player.grounded=false;
+        audioManager.playSound('jump');
+    }
+});
+
+// Inicializar audio cuando el usuario interactúe por primera vez
+document.addEventListener('click', async () => {
+    if (!audioManager.initialized) {
+        await audioManager.initialize();
+    }
+}, { once: true });
+</script>
+</body>
+</html>

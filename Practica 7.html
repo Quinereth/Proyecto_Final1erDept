@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Piedra, Papel o Tijera</title>
+  <style>
+   body {
+  font-family: 'Comic Sans MS', cursive, sans-serif; /* Tipografía divertida */
+  background-image: url("rock-paper-scissors.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  text-align: center;
+  padding: 50px;
+  height: 100vh;
+  margin: 0;
+}
+
+h1 {
+  margin-bottom: 20px;
+  color: #fff;
+  font-style: italic;
+  text-shadow: 2px 2px 5px rgba(255, 252, 250, 0.5);
+}
+
+.botones button {
+  padding: 20px 40px;          /* Botones más grandes */
+  margin: 15px;
+  font-size: 22px;             /* Letra más grande */
+  font-family: 'Verdana', sans-serif; /* Fuente distinta para los botones */
+  border: none;
+  border-radius: 20px;         /* Bordes más redondeados */
+  cursor: pointer;
+  background-color: #ffffffcc; /* Fondo blanco translúcido */
+  color: #333;
+  font-weight: bold;
+  transition: transform 0.3s, background-color 0.3s;
+  box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+}
+
+.botones button:hover {
+  transform: scale(1.2);       /* Efecto más notorio */
+  background-color: #05a8ee;   /* Se pone amarillo al pasar el mouse */
+  color: #000;
+}
+
+  </style>
+</head>
+<body>
+  <h1>✊ ✋ ✌️ Piedra, Papel o Tijera ✂ 📄 🪨</h1>
+
+  <div class="botones">
+    <button onclick="jugar('Piedra')">Piedra</button>
+    <button onclick="jugar('Papel')">Papel</button>
+    <button onclick="jugar('Tijera')">Tijera</button>
+  </div>
+
+  <div id="resultado"></div>
+
+  <div class="contador">
+    🏆 Victorias: <span id="victorias">0</span> |
+    ❌ Derrotas: <span id="derrotas">0</span> |
+    🤝 Empates: <span id="empates" >0</span>
+  </div>
+
+  <script>
+    let victorias = 0;
+    let derrotas = 0;
+    let empates = 0;
+
+    function jugar(eleccionUsuario) {
+      const opciones = ["Piedra", "Papel", "Tijera"];
+      const eleccionPC = opciones[Math.floor(Math.random() * 3)];
+      let resultado = "";
+
+      if (eleccionUsuario === eleccionPC) {
+        resultado = "🤝 Empate";
+        empates++;
+      } else if (
+        (eleccionUsuario === "Piedra" && eleccionPC === "Tijera") ||
+        (eleccionUsuario === "Papel" && eleccionPC === "Piedra") ||
+        (eleccionUsuario === "Tijera" && eleccionPC === "Papel")
+      ) {
+        resultado = "🏆 ¡Ganaste!";
+        victorias++;
+      } else {
+        resultado = "❌ Perdiste";
+        derrotas++;
+      }
+
+      document.getElementById("resultado").innerHTML = 
+        `Tú elegiste: <b>${eleccionUsuario}</b> <br> 
+         La computadora eligió: <b>${eleccionPC}</b> <br> 
+         <span>${resultado}</span>`;
+
+      document.getElementById("victorias").textContent = victorias;
+      document.getElementById("derrotas").textContent = derrotas;
+      document.getElementById("empates").textContent = empates;
+    }
+  </script>
+</body>
+</html>

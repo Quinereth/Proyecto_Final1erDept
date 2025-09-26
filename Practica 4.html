@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Práctica 4 - Juego de Memoria de Hello Kitty</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+    body {
+        font-family: 'Poppins', sans-serif;
+        text-align: center;
+        /* Estilos para la imagen de fondo */
+        background-image: url('https://thetoyinsider.com/wp-content/uploads/2020/10/Sanrio_HelloKitty-1024x576.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        background-color: #fce4ec; /* Color de respaldo si la imagen no carga */
+        margin: 0;
+        padding: 20px;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    header {
+        background: linear-gradient(to right, #f8bbd0, #ffc0cb);
+        color: white;
+        padding: 20px;
+        width: 100%;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        /* Se alinea el contenido del header al centro */
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .logo-img {
+        height: 80px;
+        margin-right: 20px;
+        border-radius: 50%;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        vertical-align: middle;
+        background-color: white;
+        padding: 5px;
+    }
+
+    .header-content {
+        /* Permite que este contenedor ocupe el espacio disponible y centre su contenido */
+        flex-grow: 1;
+        text-align: center;
+    }
+
+    header h1 {
+        margin: 0;
+        font-family: 'Pacifico', cursive;
+        font-size: 3em;
+        text-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+    }
+
+    header p {
+        margin: 5px 0;
+        font-size: 1.1em;
+    }
+
+    section.instrucciones {
+        max-width: 800px;
+        margin: 20px auto;
+        text-align: left;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 25px;
+        border-radius: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        color: #555;
+    }
+    
+    section.instrucciones ul {
+        list-style-type: none;
+        padding: 0;
+    }
+
+    section.instrucciones li {
+        margin-bottom: 10px;
+        font-size: 1.1em;
+    }
+
+    #game-board {
+        display: grid;
+        grid-template-columns: repeat(4, 120px);
+        grid-gap: 20px;
+        justify-content: center;
+        margin: 20px auto;
+    }
+
+    .card {
+        width: 120px;
+        height: 120px;
+        perspective: 1000px;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+    }
+
+    .card:hover {
+        transform: scale(1.05);
+    }
+
+    .card-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        transform-style: preserve-3d;
+        transition: transform 0.6s;
+    }
+
+    .card.flipped .card-inner {
+        transform: rotateY(180deg);
+    }
+
+    .card-front, .card-back {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 3em;
+        border-radius: 15px;
+        backface-visibility: hidden;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-front {
+        background: #f48fb1;
+        color: #fff;
+        font-size: 4em;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .card-back {
+        background: #fff;
+        color: #333;
+        transform: rotateY(180deg);
+        border: 4px solid #f8bbd0;
+        box-sizing: border-box;
+    }
+
+    #stats {
+        margin: 20px;
+        font-weight: 600;
+        background: rgba(255,255,255,0.9);
+        display: inline-block;
+        padding: 15px 30px;
+        border-radius: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        font-size: 1.2em;
+        color: #333;
+    }
+
+    button {
+        background: #f48fb1;
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        font-size: 1.2em;
+        border-radius: 15px;
+        cursor: pointer;
+        transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    button:hover {
+        background: #e0689b;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    #victory-message {
+        display: none;
+        margin-top: 20px;
+        font-size: 1.8em;
+        color: #e0689b;
+        background: rgba(255,255,255,0.95);
+        display: inline-block;
+        padding: 20px 40px;
+        border-radius: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        font-weight: bold;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+
+    #logbook {
+        margin-top: 40px;
+        width: 100%;
+        max-width: 800px;
+        background: rgba(255, 255, 255, 0.8);
+        padding: 25px;
+        border-radius: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    #logbook h2 {
+        font-family: 'Pacifico', cursive;
+        color: #f48fb1;
+        font-size: 2em;
+        margin-top: 0;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+
+    #logbook table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+
+    #logbook th, #logbook td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+
+    #logbook th {
+        background-color: #fce4ec;
+        color: #333;
+        font-weight: 600;
+        border-radius: 10px;
+    }
+
+    #logbook tr:last-child td {
+        border-bottom: none;
+    }
+</style>
+</head>
+<body>
+
+<header>
+    <img src="https://img.favpng.com/18/12/16/hello-kitty-pink-png-favpng-MZ66cLaxd0L7yvJXyafZPHvJ1.jpg" alt="Hello Kitty Logo" class="logo-img">
+    <div class="header-content">
+        <h1>Juego de Memoria</h1>
+        <p>Práctica 4 - Programación Web</p>
+        <p><strong>Alumno:</strong> QUINERETH SHEKINA GUTIERREZ HERNANDEZ &nbsp; | &nbsp; <strong>Matrícula:</strong> 202310068 </p>
+    </div>
+</header>
+
+<section class="instrucciones">
+    <h2>Instrucciones del Juego</h2>
+    <ul>
+        <li>Haz clic en una carta para voltearla.</li>
+        <li>Encuentra su pareja entre las demás cartas.</li>
+        <li>Si dos cartas coinciden, quedarán abiertas.</li>
+        <li>El juego termina cuando encuentres las 6 parejas o cuando se acabe el tiempo.</li>
+        <li>El temporizador comienza al primer clic.</li>
+        <li>Puedes reiniciar el juego con el botón "Reiniciar".</li>
+    </ul>
+</section>
+
+<div id="stats">
+    Intentos: <span id="attempts">0</span> | Tiempo: <span id="time">0</span> segundos
+</div>
+
+<div id="game-board"></div>
+
+<button onclick="resetGame()">Reiniciar</button>
+
+<div id="victory-message"></div>
+
+<section id="logbook">
+    <h2>Bitácora de Partidas</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Intentos</th>
+                <th>Tiempo (s)</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody id="logbook-body">
+        </tbody>
+    </table>
+</section>
+
+<script>
+    const board = document.getElementById("game-board");
+    const attemptsEl = document.getElementById("attempts");
+    const timeEl = document.getElementById("time");
+    const victoryMessage = document.getElementById("victory-message");
+    const logbookBody = document.getElementById("logbook-body");
+
+    // Emojis de Hello Kitty y sus amigos
+    const emojis = ["😺", "🎀", "🐰", "🍮", "🐿️", "🐻"];
+    let cards = [];
+    let firstCard = null;
+    let lockBoard = false;
+    let attempts = 0;
+    let matchedPairs = 0;
+    let timer = null;
+    let seconds = 0;
+
+    // Tiempo límite en segundos (1.5 minutos)
+    const timeLimit = 90;
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function startTimer() {
+        if (!timer) {
+            timer = setInterval(() => {
+                seconds++;
+                timeEl.textContent = seconds;
+
+                if (seconds >= timeLimit) {
+                    clearInterval(timer);
+                    endGame("¡Tiempo agotado!");
+                }
+            }, 1000);
+        }
+    }
+
+    function createBoard() {
+        const doubled = [...emojis, ...emojis];
+        cards = shuffle(doubled);
+        board.innerHTML = "";
+        cards.forEach((emoji) => {
+            const card = document.createElement("div");
+            card.classList.add("card");
+            card.dataset.value = emoji;
+            card.innerHTML = `
+            <div class="card-inner">
+                <div class="card-front">?</div>
+                <div class="card-back">${emoji}</div>
+            </div>`;
+            card.addEventListener("click", flipCard);
+            board.appendChild(card);
+        });
+    }
+
+    function flipCard() {
+        if (lockBoard || this.classList.contains("flipped")) return;
+
+        startTimer();
+
+        this.classList.add("flipped");
+
+        if (!firstCard) {
+            firstCard = this;
+            return;
+        }
+
+        attempts++;
+        attemptsEl.textContent = attempts;
+
+        if (this.dataset.value === firstCard.dataset.value) {
+            // Match found
+            // Remove event listeners to prevent re-flipping
+            this.removeEventListener("click", flipCard);
+            firstCard.removeEventListener("click", flipCard);
+            firstCard = null;
+            matchedPairs++;
+            if (matchedPairs === emojis.length) {
+                clearInterval(timer);
+                endGame("¡Felicidades, has ganado!");
+            }
+        } else {
+            lockBoard = true;
+            setTimeout(() => {
+                this.classList.remove("flipped");
+                firstCard.classList.remove("flipped");
+                firstCard = null;
+                lockBoard = false;
+            }, 1000);
+        }
+    }
+
+    function endGame(status) {
+        victoryMessage.style.display = "block";
+        if (status.includes("ganado")) {
+            victoryMessage.textContent = `🎉 ${status} en ${attempts} intentos y ${seconds} segundos 🎉`;
+        } else {
+            victoryMessage.textContent = `⏳ ${status} Lograste ${matchedPairs} aciertos.`;
+        }
+        
+        // Agregar a la bitácora
+        addLogEntry(attempts, seconds, status);
+        
+        // Reiniciar el juego después de un breve retraso
+        setTimeout(() => {
+            resetGame();
+        }, 2000);
+    }
+    
+    function addLogEntry(attempts, time, status) {
+        const row = document.createElement("tr");
+        const date = new Date().toLocaleString();
+        
+        row.innerHTML = `
+            <td>${date}</td>
+            <td>${attempts}</td>
+            <td>${time}</td>
+            <td>${status}</td>
+        `;
+        logbookBody.appendChild(row);
+    }
+
+    function resetGame() {
+        clearInterval(timer);
+        timer = null;
+        seconds = 0;
+        timeEl.textContent = 0;
+        attempts = 0;
+        attemptsEl.textContent = 0;
+        matchedPairs = 0;
+        victoryMessage.style.display = "none";
+        firstCard = null;
+        lockBoard = false;
+        createBoard();
+    }
+
+    resetGame();
+</script>
+</body>
+</html>

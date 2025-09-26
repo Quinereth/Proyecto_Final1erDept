@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Tarjeta de Presentación</title>
+  <style>
+    body {
+      font-family: 'Times New Roman', Times, serif, sans-serif;
+      background: linear-gradient(to right, #eee41e, #fb6814);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .card {
+      background-color: white;
+      width: 350px;
+      padding: 20px;
+      border-radius: 20px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      transition: transform 0.3s ease;
+    }
+
+    .card:hover {
+      transform: scale(1.05);
+    }
+
+    .card img {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 15px;
+      transition: transform 0.3s;
+    }
+
+    .card img:hover {
+      transform: rotate(5deg) scale(1.1);
+    }
+
+    h2 {
+      margin: 10px 0;
+    }
+
+    p {
+      font-size: 14px;
+      color: #555555;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 15px;
+      background-color: #000000;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #d22519;
+    }
+
+    #contacto {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #333;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img src="fotoS.jpg" alt="Foto de perfil">
+    <h2>Gutierrez Hernandez Quinereth Shekina y Aguilar Nava Fabian</h2>
+    <h4>Ingenieros en informatica y muy pronto graduados </h4>
+    <p>
+      Somos dos personas empezando nuestra pagina web y es esta nuestra carta de presentacion
+    </p>
+    <button onclick="mostrarContacto()">Mostrar contacto</button>
+    <div id="contacto">
+      📧 shekina004@gmail.com y fabiaguilar394@gmail.com<br>
+      📱 55-25-74-07-28,56-14-15-72-70
+    </div>
+  </div>
+
+  <script>
+    function mostrarContacto() {
+      const contacto = document.getElementById("contacto");
+      if (contacto.style.display === "none") {
+        contacto.style.display = "block";
+      } else {
+        contacto.style.display = "none";
+      }
+    }
+  </script>
+</body>
+</html>
